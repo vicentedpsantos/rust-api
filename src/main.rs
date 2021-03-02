@@ -2,6 +2,7 @@
 extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
+extern crate diesel;
 
 mod auth;
 
@@ -9,8 +10,11 @@ use auth::BasicAuth;
 use rocket::response::status;
 use rocket_contrib::json::JsonValue;
 
+#[database("sqlite_path")]
+struct DbConn(diesel::SqliteConnection);
+
 #[get("/rustaceans")]
-fn get_rustaceans(_auth: BasicAuth) -> JsonValue {
+fn get_rustaceans(_auth: BasicAuth, _conn: DbConn) -> JsonValue {
     json!([{ "id": 1, "name": "Vicente Santos" }, { "id": 2, "name": "Tamires Quito" }])
 }
 
@@ -66,6 +70,7 @@ async fn main() {
             ],
         )
         .register(catchers![not_found, unauthorized])
+        .attach(DbConn::fairing())
         .launch()
         .await;
 }

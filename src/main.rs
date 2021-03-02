@@ -81,6 +81,15 @@ fn unauthorized() -> JsonValue {
     })
 }
 
+#[catch(422)]
+fn unprocessable_entity() -> JsonValue {
+    json!({
+        "status": 422,
+        "title": "Unprocessable Entity",
+        "description": "The request was well-formed but one or more attributes are missing."
+    })
+}
+
 #[rocket::main]
 async fn main() {
     let _ = rocket::ignite()
@@ -94,7 +103,7 @@ async fn main() {
                 delete_rustacean
             ],
         )
-        .register(catchers![not_found, unauthorized])
+        .register(catchers![not_found, unauthorized, unprocessable_entity])
         .attach(DbConn::fairing())
         .launch()
         .await;

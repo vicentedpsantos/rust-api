@@ -846,6 +846,7 @@ dependencies = [
  "diesel",
  "rocket",
  "rocket_contrib",
+ "serde",
  "serde_json",
 ]
 

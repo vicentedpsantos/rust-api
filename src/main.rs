@@ -13,6 +13,7 @@ use auth::BasicAuth;
 use diesel::prelude::*;
 use models::*;
 use rocket::response::status;
+use rocket_contrib::json::Json;
 use rocket_contrib::json::JsonValue;
 use schema::*;
 
@@ -36,9 +37,20 @@ fn view_rustacean(id: i32, _auth: BasicAuth) -> JsonValue {
     json!({ "id": id, "name": "Vicente Santos" })
 }
 
-#[post("/rustaceans", format = "json")]
-fn create_rustacean(_auth: BasicAuth) -> JsonValue {
-    json!({ "id": 3, "name": "Vicente Santos" })
+#[post("/rustaceans", format = "json", data = "<new_rustacean>")]
+async fn create_rustacean(
+    _auth: BasicAuth,
+    conn: DbConn,
+    new_rustacean: Json<NewRustacean>,
+) -> JsonValue {
+    conn.run(|c| {
+        let result = diesel::insert_into(rustaceans::table)
+            .values(new_rustacean.into_inner())
+            .execute(c)
+            .expect("Error adding rustacean to db");
+        json!(result)
+    })
+    .await
 }
 
 #[put("/rustaceans/<id>", format = "json")]

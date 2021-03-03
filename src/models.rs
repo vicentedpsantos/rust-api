@@ -1,11 +1,12 @@
 use super::schema::rustaceans;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Serialize, Deserialize)]
+#[derive(Debug, Queryable, Serialize, Deserialize, AsChangeset)]
 pub struct Rustacean {
     pub id: i32,
     pub name: String,
     pub email: String,
+    #[serde(skip_deserializing)]
     pub created_at: String,
 }
 

@@ -22,20 +22,28 @@ use rocket_contrib::json::JsonValue;
 struct DbConn(diesel::SqliteConnection);
 
 #[get("/rustaceans")]
-async fn get_rustaceans(_auth: BasicAuth, conn: DbConn) -> JsonValue {
+async fn get_rustaceans(
+    _auth: BasicAuth,
+    conn: DbConn,
+) -> Result<JsonValue, status::Custom<JsonValue>> {
     conn.run(|c| {
-        let all = RustaceanRepository::load_all(c).expect("Error loading rustaceans from DB");
-        json!(all)
+        RustaceanRepository::load_all(c)
+            .map(|rustaceans| json!(rustaceans))
+            .map_err(|e| status::Custom(Status::InternalServerError, json!(e.to_string())))
     })
     .await
 }
 
 #[get("/rustaceans/<id>")]
-async fn view_rustacean(id: i32, _auth: BasicAuth, conn: DbConn) -> JsonValue {
+async fn view_rustacean(
+    id: i32,
+    _auth: BasicAuth,
+    conn: DbConn,
+) -> Result<JsonValue, status::Custom<JsonValue>> {
     conn.run(move |c| {
-        let rustacean =
-            RustaceanRepository::find_one(c, id).expect("Error finding rustacean in DB");
-        json!(rustacean)
+        RustaceanRepository::find_one(c, id)
+            .map(|rustaceans| json!(rustaceans))
+            .map_err(|e| status::Custom(Status::InternalServerError, json!(e.to_string())))
     })
     .await
 }
@@ -45,11 +53,11 @@ async fn create_rustacean(
     _auth: BasicAuth,
     conn: DbConn,
     new_rustacean: Json<NewRustacean>,
-) -> JsonValue {
+) -> Result<JsonValue, status::Custom<JsonValue>> {
     conn.run(|c| {
-        let result = RustaceanRepository::create(c, new_rustacean.into_inner())
-            .expect("Error adding rustacean to DB");
-        json!(result)
+        RustaceanRepository::create(c, new_rustacean.into_inner())
+            .map(|rustaceans| json!(rustaceans))
+            .map_err(|e| status::Custom(Status::InternalServerError, json!(e.to_string())))
     })
     .await
 }
@@ -60,11 +68,11 @@ async fn update_rustacean(
     _auth: BasicAuth,
     conn: DbConn,
     rustacean: Json<Rustacean>,
-) -> JsonValue {
+) -> Result<JsonValue, status::Custom<JsonValue>> {
     conn.run(move |c| {
-        let result = RustaceanRepository::save(c, rustacean.into_inner())
-            .expect("Error updating rustaceans in db");
-        json!(result)
+        RustaceanRepository::save(c, rustacean.into_inner())
+            .map(|rustaceans| json!(rustaceans))
+            .map_err(|e| status::Custom(Status::InternalServerError, json!(e.to_string())))
     })
     .await
 }

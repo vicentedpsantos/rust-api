@@ -35,7 +35,7 @@ impl RustaceanRepository {
     pub fn delete(c: &SqliteConnection, id: i32) -> bool {
         match Self::find_one(c, id) {
             Ok(_) => {
-                diesel::delete(rustaceans::table.find(id)).execute(c);
+                let _ = diesel::delete(rustaceans::table.find(id)).execute(c);
                 true
             }
             Err(_) => false,

@@ -4,6 +4,8 @@ extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 mod auth;
 mod models;
@@ -13,10 +15,13 @@ mod schema;
 use auth::BasicAuth;
 use models::*;
 use repositories::*;
+use rocket::fairing::AdHoc;
 use rocket::http::Status;
 use rocket::response::status;
 use rocket_contrib::json::Json;
 use rocket_contrib::json::JsonValue;
+
+embed_migrations!();
 
 #[database("sqlite_path")]
 struct DbConn(diesel::SqliteConnection);
@@ -113,6 +118,20 @@ fn unprocessable_entity() -> JsonValue {
     })
 }
 
+async fn run_db_migrations(rocket: rocket::Rocket) -> Result<rocket::Rocket, rocket::Rocket> {
+    DbConn::get_one(&rocket)
+        .await
+        .expect("failed to retrieve database connection")
+        .run(|c| match embedded_migrations::run(c) {
+            Ok(()) => Ok(rocket),
+            Err(e) => {
+                println!("Failed to run database migrations: {:?}", e);
+                Err(rocket)
+            }
+        })
+        .await
+}
+
 #[rocket::main]
 async fn main() {
     let _ = rocket::ignite()
@@ -128,6 +147,7 @@ async fn main() {
         )
         .register(catchers![not_found, unauthorized, unprocessable_entity])
         .attach(DbConn::fairing())
+        .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
         .launch()
         .await;
 }
